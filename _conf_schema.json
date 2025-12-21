@@ -1,0 +1,196 @@
+{
+  "enable_plugin": {
+    "description": "启用插件",
+    "type": "bool",
+    "hint": "关闭后将不处理任何 LLM 输出",
+    "default": true
+  },
+  "enable_logging": {
+    "description": "启用详细日志",
+    "type": "bool",
+    "hint": "在控制台显示每次过滤的详细信息",
+    "default": true
+  },
+  "remove_think_tag": {
+    "description": "【预设】移除 <think></think> 思考标签",
+    "type": "bool",
+    "hint": "适用于 DeepSeek 等模型的思考过程标签",
+    "obvious_hint": true,
+    "default": false
+  },
+  "remove_markdown_bold": {
+    "description": "【预设】移除 Markdown 粗体 **text**",
+    "type": "bool",
+    "hint": "将 **文字** 转换为 文字",
+    "default": false
+  },
+  "remove_markdown_italic": {
+    "description": "【预设】移除 Markdown 斜体 *text*",
+    "type": "bool",
+    "default": false
+  },
+  "remove_markdown_code_block": {
+    "description": "【预设】移除 Markdown 代码块 ```code```",
+    "type": "bool",
+    "default": false
+  },
+  "remove_markdown_inline_code": {
+    "description": "【预设】移除 Markdown 行内代码 `code`",
+    "type": "bool",
+    "default": false
+  },
+  "remove_markdown_headers": {
+    "description": "【预设】移除 Markdown 标题 # ## ###",
+    "type": "bool",
+    "default": false
+  },
+  "remove_markdown_links": {
+    "description": "【预设】移除 Markdown 链接 [text](url)",
+    "type": "bool",
+    "default": false
+  },
+  "remove_markdown_quotes": {
+    "description": "【预设】移除 Markdown 引用 > quote",
+    "type": "bool",
+    "default": false
+  },
+  "remove_markdown_lists": {
+    "description": "【预设】移除 Markdown 列表标记 - *",
+    "type": "bool",
+    "default": false
+  },
+  "remove_all_html_tags": {
+    "description": "【预设】移除所有 HTML 标签",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_1_enabled": {
+    "description": "【自定义规则1】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_1_name": {
+    "description": "【自定义规则1】规则名称",
+    "type": "string",
+    "default": "自定义规则1"
+  },
+  "custom_rule_1_pattern": {
+    "description": "【自定义规则1】正则表达式",
+    "type": "string",
+    "hint": "要匹配的正则表达式",
+    "obvious_hint": true,
+    "default": ""
+  },
+  "custom_rule_1_replacement": {
+    "description": "【自定义规则1】替换内容",
+    "type": "string",
+    "hint": "替换为的内容，留空表示删除，支持 $1 等捕获组",
+    "default": ""
+  },
+  "custom_rule_1_flags": {
+    "description": "【自定义规则1】正则标志",
+    "type": "string",
+    "hint": "i=忽略大小写, m=多行, s=点号匹配换行",
+    "default": ""
+  },
+  "custom_rule_2_enabled": {
+    "description": "【自定义规则2】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_2_name": {
+    "description": "【自定义规则2】规则名称",
+    "type": "string",
+    "default": "自定义规则2"
+  },
+  "custom_rule_2_pattern": {
+    "description": "【自定义规则2】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_2_replacement": {
+    "description": "【自定义规则2】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_2_flags": {
+    "description": "【自定义规则2】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_3_enabled": {
+    "description": "【自定义规则3】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_3_name": {
+    "description": "【自定义规则3】规则名称",
+    "type": "string",
+    "default": "自定义规则3"
+  },
+  "custom_rule_3_pattern": {
+    "description": "【自定义规则3】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_3_replacement": {
+    "description": "【自定义规则3】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_3_flags": {
+    "description": "【自定义规则3】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_4_enabled": {
+    "description": "【自定义规则4】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_4_name": {
+    "description": "【自定义规则4】规则名称",
+    "type": "string",
+    "default": "自定义规则4"
+  },
+  "custom_rule_4_pattern": {
+    "description": "【自定义规则4】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_4_replacement": {
+    "description": "【自定义规则4】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_4_flags": {
+    "description": "【自定义规则4】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_5_enabled": {
+    "description": "【自定义规则5】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_5_name": {
+    "description": "【自定义规则5】规则名称",
+    "type": "string",
+    "default": "自定义规则5"
+  },
+  "custom_rule_5_pattern": {
+    "description": "【自定义规则5】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_5_replacement": {
+    "description": "【自定义规则5】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_5_flags": {
+    "description": "【自定义规则5】正则标志",
+    "type": "string",
+    "default": ""
+  }
+}
