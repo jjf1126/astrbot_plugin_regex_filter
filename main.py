@@ -1,9 +1,11 @@
-from astrbot.api.event import filter, AstrMessageEvent
+from astrbot.api.event import filter, AstrMessageEvent, EventType
 from astrbot.api.star import Context, Star, register
 from astrbot.api.provider import LLMResponse
 from astrbot.api import logger, AstrBotConfig
 import re
 from typing import List, Dict, Any, Tuple
+from astrbot.api.message_components import Plain
+
 
 @register(
     "astrbot_plugin_regex_filter",
@@ -100,19 +102,12 @@ class RegexFilterPlugin(Star):
     
     def _get_all_rules(self) -> List[Dict[str, Any]]:
         return self.compiled_preset_rules + self.compiled_custom_rules
-    
-    @filter.on_llm_response()
-    async def on_llm_resp(self, event: AstrMessageEvent, resp: LLMResponse):
-        config = self._get_config()
-        if not config.get("enable_plugin", True):
-            return
-        if not resp or not resp.completion_text:
-            return
+   # ... 前面的代码保持不变 ...
+
+    # 提取出的公共过滤方法
+    def _apply_rules_to_text(self, text: str) -> Tuple[str, List[str]]:
         all_rules = self._get_all_rules()
-        if not all_rules:
-            return
-        original_text = resp.completion_text
-        cleaned_text = original_text
+        cleaned_text = text
         applied_rules = []
         for rule in all_rules:
             try:
@@ -122,10 +117,50 @@ class RegexFilterPlugin(Star):
                     cleaned_text = new_text
             except Exception as e:
                 logger.error(f"[Regex Filter] 规则执行错误 [{rule['name']}]: {e}")
-        if original_text != cleaned_text:
+        return cleaned_text, applied_rules
+
+    # 修改原有的 on_llm_resp 逻辑以调用公共方法
+    @filter.on_llm_response()
+    async def on_llm_resp(self, event: AstrMessageEvent, resp: LLMResponse):
+        config = self._get_config()
+        if not config.get("enable_plugin", True) or not resp or not resp.completion_text:
+            return
+        
+        cleaned_text, applied_rules = self._apply_rules_to_text(resp.completion_text)
+        
+        if resp.completion_text != cleaned_text:
             resp.completion_text = cleaned_text
             if config.get("enable_logging", True):
-                logger.warning(f"[Regex Filter] 已应用规则: {', '.join(applied_rules)}")
+                logger.warning(f"[Regex Filter] (LLM响应) 已应用规则: {', '.join(applied_rules)}")
+
+    # 新增：添加对装饰事件的监听，拦截主动消息
+    @filter.on_event(EventType.OnDecoratingResultEvent)
+    async def on_decorating(self, event: AstrMessageEvent):
+        config = self._get_config()
+        if not config.get("enable_plugin", True):
+            return
+
+        # 获取主动消息插件传入的消息结果
+        result = event.get_result()
+        if not result or not result.chain:
+            return
+
+        # 遍历消息链中的 Plain 文本组件并进行正则替换
+        any_changed = False
+        all_applied = []
+        
+        for component in result.chain:
+            if isinstance(component, Plain):
+                original_text = component.text
+                cleaned_text, applied = self._apply_rules_to_text(original_text)
+                if original_text != cleaned_text:
+                    component.text = cleaned_text
+                    any_changed = True
+                    all_applied.extend(applied)
+        
+        if any_changed and config.get("enable_logging", True):
+            logger.warning(f"[Regex Filter] (装饰器) 已应用规则: {', '.join(set(all_applied))}")
+
     
     @filter.command("rf_reload")
     async def reload_rules(self, event: AstrMessageEvent):
@@ -168,4 +203,5 @@ class RegexFilterPlugin(Star):
             f"✨ 处理后:\n{result}\n\n"
             f"📋 应用规则: {', '.join(applied) if applied else '无匹配'}"
         )
+
         yield event.plain_result(msg)
