@@ -1,4 +1,4 @@
-from astrbot.api.event import filter, AstrMessageEvent, EventType
+from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api.provider import LLMResponse
 from astrbot.api import logger, AstrBotConfig
@@ -205,3 +205,4 @@ class RegexFilterPlugin(Star):
         )
 
         yield event.plain_result(msg)
+
