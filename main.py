@@ -5,7 +5,7 @@ from astrbot.api import logger, AstrBotConfig
 import re
 from typing import List, Dict, Any, Tuple
 from astrbot.api.message_components import Plain
-
+from astrbot.core.star.star_handler import EventType
 
 @register(
     "astrbot_plugin_regex_filter",
@@ -205,4 +205,5 @@ class RegexFilterPlugin(Star):
         )
 
         yield event.plain_result(msg)
+
 
