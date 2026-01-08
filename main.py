@@ -5,7 +5,6 @@ from astrbot.api import logger, AstrBotConfig
 import re
 from typing import List, Dict, Any, Tuple
 from astrbot.api.message_components import Plain
-from astrbot.core.star.star_handler import EventType
 
 @register(
     "astrbot_plugin_regex_filter",
@@ -119,7 +118,7 @@ class RegexFilterPlugin(Star):
                 logger.error(f"[Regex Filter] 规则执行错误 [{rule['name']}]: {e}")
         return cleaned_text, applied_rules
 
-    # 修改原有的 on_llm_resp 逻辑以调用公共方法
+    # 1. 保留原有的 LLM 响应监听（处理常规对话）
     @filter.on_llm_response()
     async def on_llm_resp(self, event: AstrMessageEvent, resp: LLMResponse):
         config = self._get_config()
@@ -133,22 +132,21 @@ class RegexFilterPlugin(Star):
             if config.get("enable_logging", True):
                 logger.warning(f"[Regex Filter] (LLM响应) 已应用规则: {', '.join(applied_rules)}")
 
-    # 新增：添加对装饰事件的监听，拦截主动消息
-    @filter.on_event(EventType.OnDecoratingResultEvent)
-    async def on_decorating(self, event: AstrMessageEvent):
+    # 2. 参考 splitter 插件，新增装饰结果监听（处理主动消息）
+    @filter.on_decorating_result()
+    async def on_decorating_result(self, event: AstrMessageEvent):
         config = self._get_config()
         if not config.get("enable_plugin", True):
             return
 
-        # 获取主动消息插件传入的消息结果
-        result = event.get_result()
+        result = event.get_result() # 获取装饰流程中的消息链
         if not result or not result.chain:
             return
 
-        # 遍历消息链中的 Plain 文本组件并进行正则替换
         any_changed = False
         all_applied = []
         
+        # 遍历消息链，只处理纯文本部分
         for component in result.chain:
             if isinstance(component, Plain):
                 original_text = component.text
@@ -205,5 +203,6 @@ class RegexFilterPlugin(Star):
         )
 
         yield event.plain_result(msg)
+
 
 
