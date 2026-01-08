@@ -119,21 +119,21 @@ class RegexFilterPlugin(Star):
         return cleaned_text, applied_rules
 
     # 1. 保留原有的 LLM 响应监听（处理常规对话）
-    @filter.on_llm_response()
-    async def on_llm_resp(self, event: AstrMessageEvent, resp: LLMResponse):
-        config = self._get_config()
-        if not config.get("enable_plugin", True) or not resp or not resp.completion_text:
-            return
+#    @filter.on_llm_response()
+#    async def on_llm_resp(self, event: AstrMessageEvent, resp: LLMResponse):
+#        config = self._get_config()
+#        if not config.get("enable_plugin", True) or not resp or not resp.completion_text:
+#            return
         
-        cleaned_text, applied_rules = self._apply_rules_to_text(resp.completion_text)
+#        cleaned_text, applied_rules = self._apply_rules_to_text(resp.completion_text)
         
-        if resp.completion_text != cleaned_text:
-            resp.completion_text = cleaned_text
-            if config.get("enable_logging", True):
-                logger.warning(f"[Regex Filter] (LLM响应) 已应用规则: {', '.join(applied_rules)}")
+ #       if resp.completion_text != cleaned_text:
+ #           resp.completion_text = cleaned_text
+ #           if config.get("enable_logging", True):
+  #              logger.warning(f"[Regex Filter] (LLM响应) 已应用规则: {', '.join(applied_rules)}")
 
     # 2. 参考 splitter 插件，新增装饰结果监听（处理主动消息）
-    @filter.on_decorating_result(priority=1000)
+    @filter.on_decorating_result(priority=100000000000000001)
     async def on_decorating_result(self, event: AstrMessageEvent):
         config = self._get_config()
         if not config.get("enable_plugin", True):
@@ -203,6 +203,7 @@ class RegexFilterPlugin(Star):
         )
 
         yield event.plain_result(msg)
+
 
 
 
