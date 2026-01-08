@@ -133,7 +133,7 @@ class RegexFilterPlugin(Star):
                 logger.warning(f"[Regex Filter] (LLM响应) 已应用规则: {', '.join(applied_rules)}")
 
     # 2. 参考 splitter 插件，新增装饰结果监听（处理主动消息）
-    @filter.on_decorating_result()
+    @filter.on_decorating_result(priority=1000)
     async def on_decorating_result(self, event: AstrMessageEvent):
         config = self._get_config()
         if not config.get("enable_plugin", True):
@@ -203,6 +203,7 @@ class RegexFilterPlugin(Star):
         )
 
         yield event.plain_result(msg)
+
 
 
 
