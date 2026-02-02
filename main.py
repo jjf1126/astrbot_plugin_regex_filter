@@ -10,7 +10,7 @@ from astrbot.api.message_components import Plain
     "astrbot_plugin_regex_filter",
     "YourName",
     "自定义正则过滤 LLM 输出 - 支持预设规则和自定义规则",
-    "1.0.3",
+    "1.0.2",
     "https://github.com/yourname/astrbot_plugin_regex_filter"
 )
 class RegexFilterPlugin(Star):
@@ -28,6 +28,7 @@ class RegexFilterPlugin(Star):
         "remove_all_html_tags": (r"<[^>]+>", "", 0, "HTML标签"),
     }
     
+    # ========== 关键修改点：__init__ 必须包含 config 参数 ==========
     def __init__(self, context: Context, config: AstrBotConfig = None):
         super().__init__(context)
         self.plugin_config = config if config else {}
@@ -35,11 +36,13 @@ class RegexFilterPlugin(Star):
         self.compiled_custom_rules: List[Dict[str, Any]] = []
         self._load_rules()
     
+    # ========== 关键修改点：直接返回 self.plugin_config ==========
     def _get_config(self) -> Dict[str, Any]:
         return self.plugin_config
     
     def _load_rules(self):
         config = self._get_config()
+        logger.info(f"[Regex Filter] 🔍 插件配置: {config}")
         self._load_preset_rules(config)
         self._load_custom_rules(config)
         total = len(self.compiled_preset_rules) + len(self.compiled_custom_rules)
@@ -64,39 +67,20 @@ class RegexFilterPlugin(Star):
                 logger.error(f"[Regex Filter] ✗ 预设规则编译失败 [{description}]: {e}")
     
     def _load_custom_rules(self, config: Dict[str, Any]):
-        """
-        加载自定义规则（适配 list 结构配置）
-        """
         self.compiled_custom_rules = []
-        custom_rules = config.get("custom_rules", [])
-        
-        # 容错处理
-        if not isinstance(custom_rules, list):
-            return
-
-        for idx, rule_cfg in enumerate(custom_rules):
-            if not isinstance(rule_cfg, dict):
+        for i in range(1, 16):
+            prefix = f"custom_rule_{i}"
+            if not config.get(f"{prefix}_enabled", False):
                 continue
-            
-            # 1. 检查启用状态
-            if not rule_cfg.get("enabled", True):
-                continue
-            
-            # 2. 获取正则模式
-            pattern_str = rule_cfg.get("pattern", "").strip()
+            pattern_str = config.get(f"{prefix}_pattern", "").strip()
             if not pattern_str:
                 continue
-                
-            # 3. 获取其他参数
-            name = rule_cfg.get("name", f"规则_{idx+1}")
-            replacement = rule_cfg.get("replacement", "")
-            flags_str = rule_cfg.get("flags", "")
-            
-            # 4. 编译正则
+            name = config.get(f"{prefix}_name", f"自定义规则{i}")
+            replacement = config.get(f"{prefix}_replacement", "")
+            flags_str = config.get(f"{prefix}_flags", "")
             try:
                 flags = self._parse_flags(flags_str)
                 compiled_pattern = re.compile(pattern_str, flags)
-                
                 self.compiled_custom_rules.append({
                     "name": f"[自定义] {name}",
                     "pattern": compiled_pattern,
@@ -109,8 +93,6 @@ class RegexFilterPlugin(Star):
     
     def _parse_flags(self, flags_str: str) -> int:
         flags = 0
-        if not flags_str:
-            return flags
         for char in str(flags_str).upper():
             if char == 'I': flags |= re.IGNORECASE
             elif char == 'M': flags |= re.MULTILINE
@@ -119,12 +101,13 @@ class RegexFilterPlugin(Star):
     
     def _get_all_rules(self) -> List[Dict[str, Any]]:
         return self.compiled_preset_rules + self.compiled_custom_rules
+   # ... 前面的代码保持不变 ...
 
+    # 提取出的公共过滤方法
     def _apply_rules_to_text(self, text: str) -> Tuple[str, List[str]]:
         all_rules = self._get_all_rules()
         cleaned_text = text
         applied_rules = []
-        
         for rule in all_rules:
             try:
                 new_text = rule["pattern"].sub(rule["replacement"], cleaned_text)
@@ -133,75 +116,94 @@ class RegexFilterPlugin(Star):
                     cleaned_text = new_text
             except Exception as e:
                 logger.error(f"[Regex Filter] 规则执行错误 [{rule['name']}]: {e}")
-                
         return cleaned_text, applied_rules
 
+    # 1. 保留原有的 LLM 响应监听（处理常规对话）
+#    @filter.on_llm_response()
+#    async def on_llm_resp(self, event: AstrMessageEvent, resp: LLMResponse):
+#        config = self._get_config()
+#        if not config.get("enable_plugin", True) or not resp or not resp.completion_text:
+#            return
+        
+#        cleaned_text, applied_rules = self._apply_rules_to_text(resp.completion_text)
+        
+ #       if resp.completion_text != cleaned_text:
+ #           resp.completion_text = cleaned_text
+ #           if config.get("enable_logging", True):
+  #              logger.warning(f"[Regex Filter] (LLM响应) 已应用规则: {', '.join(applied_rules)}")
+
+    # 2. 参考 splitter 插件，新增装饰结果监听（处理主动消息）
     @filter.on_decorating_result(priority=100000000000000001)
     async def on_decorating_result(self, event: AstrMessageEvent):
         config = self._get_config()
         if not config.get("enable_plugin", True):
             return
 
-        result = event.get_result()
+        result = event.get_result() # 获取装饰流程中的消息链
         if not result or not result.chain:
             return
 
         any_changed = False
         all_applied = []
         
+        # 遍历消息链，只处理纯文本部分
         for component in result.chain:
             if isinstance(component, Plain):
                 original_text = component.text
                 cleaned_text, applied = self._apply_rules_to_text(original_text)
-                
                 if original_text != cleaned_text:
                     component.text = cleaned_text
                     any_changed = True
                     all_applied.extend(applied)
         
         if any_changed and config.get("enable_logging", True):
-            unique_applied = list(set(all_applied))
-            logger.warning(f"[Regex Filter] 已过滤: {', '.join(unique_applied)}")
+            logger.warning(f"[Regex Filter] (装饰器) 已应用规则: {', '.join(set(all_applied))}")
 
+    
     @filter.command("rf_reload")
     async def reload_rules(self, event: AstrMessageEvent):
-        """重载配置"""
         self._load_rules()
-        count = len(self._get_all_rules())
-        yield event.plain_result(f"✅ 规则已重新加载，当前生效规则数: {count}")
+        yield event.plain_result(f"✅ 规则已重新加载,当前启用: {len(self._get_all_rules())} 条")
     
     @filter.command("rf_list")
     async def list_rules(self, event: AstrMessageEvent):
-        """列出当前生效的规则"""
         all_rules = self._get_all_rules()
         if not all_rules:
             yield event.plain_result("📋 当前没有启用任何规则")
             return
-            
-        msg = [f"📋 已启用 {len(all_rules)} 条规则:"]
+        msg = f"📋 已启用 {len(all_rules)} 条规则:\n\n"
         for i, rule in enumerate(all_rules, 1):
-            msg.append(f"{i}. {rule['name']}")
-        
-        yield event.plain_result("\n".join(msg))
+            msg += f"  {i}. {rule['name']}\n"
+        yield event.plain_result(msg)
     
     @filter.command("rf_test")
     async def test_regex(self, event: AstrMessageEvent, text: str = ""):
-        """测试正则规则"""
         if not text:
             yield event.plain_result("📖 用法: /rf_test <测试文本>")
             return
-            
         all_rules = self._get_all_rules()
         if not all_rules:
             yield event.plain_result("❌ 当前没有启用任何规则")
             return
-            
-        # 处理用户输入的换行符
-        test_text = text.replace('\\n', '\n')
-        
-        result_text, applied = self._apply_rules_to_text(test_text)
-        
-        match_info = ', '.join(applied) if applied else '无匹配'
-        msg = f"📝 原文:\n{test_text}\n\n✨ 处理后:\n{result_text}\n\n📋 匹配规则: {match_info}"
-        
+        text = text.replace('\\n', '\n')
+        result = text
+        applied = []
+        for rule in all_rules:
+            try:
+                new_result = rule["pattern"].sub(rule["replacement"], result)
+                if new_result != result:
+                    applied.append(rule["name"])
+                    result = new_result
+            except Exception as e:
+                applied.append(f"{rule['name']}(❌)")
+        msg = (
+            f"📝 原文:\n{text}\n\n"
+            f"✨ 处理后:\n{result}\n\n"
+            f"📋 应用规则: {', '.join(applied) if applied else '无匹配'}"
+        )
+
         yield event.plain_result(msg)
+
+
+
+
