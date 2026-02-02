@@ -40,7 +40,7 @@ class RegexFilterPlugin(Star):
     
     def _load_rules(self):
         config = self._get_config()
-        logger.info(f"[Regex Filter] 🔍 插件配置: {config}")
+        # logger.info(f"[Regex Filter] 🔍 插件配置: {config}") # 调试时可开启
         self._load_preset_rules(config)
         self._load_custom_rules(config)
         total = len(self.compiled_preset_rules) + len(self.compiled_custom_rules)
@@ -65,33 +65,43 @@ class RegexFilterPlugin(Star):
                 logger.error(f"[Regex Filter] ✗ 预设规则编译失败 [{description}]: {e}")
     
     def _load_custom_rules(self, config: Dict[str, Any]):
-        """加载自定义规则列表逻辑"""
+        """
+        加载自定义规则（适配新的 list 结构配置）
+        """
         self.compiled_custom_rules = []
-        custom_rules_list = config.get("custom_rules", [])
         
-        if not isinstance(custom_rules_list, list):
-            logger.error("[Regex Filter] ✗ 配置项 custom_rules 格式错误，应为列表类型")
+        # 获取配置中的 custom_rules 列表，默认为空列表
+        custom_rules = config.get("custom_rules", [])
+        
+        # 容错处理：如果配置不是列表（比如刚升级配置尚未刷新），则跳过
+        if not isinstance(custom_rules, list):
+            # 兼容旧配置或空配置的情况，不报错，直接返回
             return
 
-        for idx, rule_cfg in enumerate(custom_rules_list):
+        for idx, rule_cfg in enumerate(custom_rules):
+            # 确保每一项都是字典
             if not isinstance(rule_cfg, dict):
                 continue
-            
-            # 检查是否启用
+                
+            # 1. 检查启用状态 (默认为 True)
             if not rule_cfg.get("enabled", True):
                 continue
-                
+            
+            # 2. 获取正则模式
             pattern_str = rule_cfg.get("pattern", "").strip()
             if not pattern_str:
                 continue
                 
+            # 3. 获取其他参数
             name = rule_cfg.get("name", f"规则_{idx+1}")
             replacement = rule_cfg.get("replacement", "")
             flags_str = rule_cfg.get("flags", "")
             
+            # 4. 编译正则
             try:
                 flags = self._parse_flags(flags_str)
                 compiled_pattern = re.compile(pattern_str, flags)
+                
                 self.compiled_custom_rules.append({
                     "name": f"[自定义] {name}",
                     "pattern": compiled_pattern,
@@ -119,15 +129,17 @@ class RegexFilterPlugin(Star):
         all_rules = self._get_all_rules()
         cleaned_text = text
         applied_rules = []
+        
         for rule in all_rules:
             try:
-                # 使用 re.sub 进行替换。注意：Python 的 re.sub 处理 \1, \2 捕获组。
+                # 执行替换
                 new_text = rule["pattern"].sub(rule["replacement"], cleaned_text)
                 if new_text != cleaned_text:
                     applied_rules.append(rule["name"])
                     cleaned_text = new_text
             except Exception as e:
                 logger.error(f"[Regex Filter] 规则执行错误 [{rule['name']}]: {e}")
+                
         return cleaned_text, applied_rules
 
     @filter.on_decorating_result(priority=100000000000000001)
@@ -136,60 +148,31 @@ class RegexFilterPlugin(Star):
         if not config.get("enable_plugin", True):
             return
 
-        result = event.get_result() # 获取装饰流程中的消息链
+        result = event.get_result()
         if not result or not result.chain:
             return
 
         any_changed = False
         all_applied = []
         
-        # 遍历消息链，只处理纯文本部分
         for component in result.chain:
             if isinstance(component, Plain):
                 original_text = component.text
                 cleaned_text, applied = self._apply_rules_to_text(original_text)
+                
                 if original_text != cleaned_text:
                     component.text = cleaned_text
                     any_changed = True
                     all_applied.extend(applied)
         
         if any_changed and config.get("enable_logging", True):
-            logger.warning(f"[Regex Filter] (装饰器) 已应用规则: {', '.join(set(all_applied))}")
+            # 去重并在日志中显示
+            unique_applied = list(set(all_applied))
+            logger.warning(f"[Regex Filter] 已过滤: {', '.join(unique_applied)}")
 
     @filter.command("rf_reload")
     async def reload_rules(self, event: AstrMessageEvent):
+        """重载配置"""
         self._load_rules()
-        yield event.plain_result(f"✅ 规则已重新加载, 当前启用: {len(self._get_all_rules())} 条")
-    
-    @filter.command("rf_list")
-    async def list_rules(self, event: AstrMessageEvent):
-        all_rules = self._get_all_rules()
-        if not all_rules:
-            yield event.plain_result("📋 当前没有启用任何规则")
-            return
-        msg = f"📋 已启用 {len(all_rules)} 条规则:\n\n"
-        for i, rule in enumerate(all_rules, 1):
-            msg += f"  {i}. {rule['name']}\n"
-        yield event.plain_result(msg)
-    
-    @filter.command("rf_test")
-    async def test_regex(self, event: AstrMessageEvent, text: str = ""):
-        if not text:
-            yield event.plain_result("📖 用法: /rf_test <测试文本>")
-            return
-        all_rules = self._get_all_rules()
-        if not all_rules:
-            yield event.plain_result("❌ 当前没有启用任何规则")
-            return
-            
-        # 转换用户输入的换行符转义
-        test_text = text.replace('\\n', '\n')
-        result_text, applied = self._apply_rules_to_text(test_text)
-        
-        msg = (
-            f"📝 原文:\n{test_text}\n\n"
-            f"✨ 处理后:\n{result_text}\n\n"
-            f"📋 应用规则: {', '.join(applied) if applied else '无匹配'}"
-        )
-
-        yield event.plain_result(msg)
+        count = len(self._get_all_rules())
+        yield event.plain_result(
