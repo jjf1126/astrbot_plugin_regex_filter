@@ -10,7 +10,7 @@ from astrbot.api.message_components import Plain
     "astrbot_plugin_regex_filter",
     "YourName",
     "自定义正则过滤 LLM 输出 - 支持预设规则和自定义规则",
-    "1.0.2",
+    "1.0.3",
     "https://github.com/yourname/astrbot_plugin_regex_filter"
 )
 class RegexFilterPlugin(Star):
@@ -40,7 +40,6 @@ class RegexFilterPlugin(Star):
     
     def _load_rules(self):
         config = self._get_config()
-        # logger.info(f"[Regex Filter] 🔍 插件配置: {config}") # 调试时可开启
         self._load_preset_rules(config)
         self._load_custom_rules(config)
         total = len(self.compiled_preset_rules) + len(self.compiled_custom_rules)
@@ -66,24 +65,20 @@ class RegexFilterPlugin(Star):
     
     def _load_custom_rules(self, config: Dict[str, Any]):
         """
-        加载自定义规则（适配新的 list 结构配置）
+        加载自定义规则（适配 list 结构配置）
         """
         self.compiled_custom_rules = []
-        
-        # 获取配置中的 custom_rules 列表，默认为空列表
         custom_rules = config.get("custom_rules", [])
         
-        # 容错处理：如果配置不是列表（比如刚升级配置尚未刷新），则跳过
+        # 容错处理
         if not isinstance(custom_rules, list):
-            # 兼容旧配置或空配置的情况，不报错，直接返回
             return
 
         for idx, rule_cfg in enumerate(custom_rules):
-            # 确保每一项都是字典
             if not isinstance(rule_cfg, dict):
                 continue
-                
-            # 1. 检查启用状态 (默认为 True)
+            
+            # 1. 检查启用状态
             if not rule_cfg.get("enabled", True):
                 continue
             
@@ -132,7 +127,6 @@ class RegexFilterPlugin(Star):
         
         for rule in all_rules:
             try:
-                # 执行替换
                 new_text = rule["pattern"].sub(rule["replacement"], cleaned_text)
                 if new_text != cleaned_text:
                     applied_rules.append(rule["name"])
@@ -166,7 +160,6 @@ class RegexFilterPlugin(Star):
                     all_applied.extend(applied)
         
         if any_changed and config.get("enable_logging", True):
-            # 去重并在日志中显示
             unique_applied = list(set(all_applied))
             logger.warning(f"[Regex Filter] 已过滤: {', '.join(unique_applied)}")
 
@@ -175,4 +168,40 @@ class RegexFilterPlugin(Star):
         """重载配置"""
         self._load_rules()
         count = len(self._get_all_rules())
-        yield event.plain_result(
+        yield event.plain_result(f"✅ 规则已重新加载，当前生效规则数: {count}")
+    
+    @filter.command("rf_list")
+    async def list_rules(self, event: AstrMessageEvent):
+        """列出当前生效的规则"""
+        all_rules = self._get_all_rules()
+        if not all_rules:
+            yield event.plain_result("📋 当前没有启用任何规则")
+            return
+            
+        msg = [f"📋 已启用 {len(all_rules)} 条规则:"]
+        for i, rule in enumerate(all_rules, 1):
+            msg.append(f"{i}. {rule['name']}")
+        
+        yield event.plain_result("\n".join(msg))
+    
+    @filter.command("rf_test")
+    async def test_regex(self, event: AstrMessageEvent, text: str = ""):
+        """测试正则规则"""
+        if not text:
+            yield event.plain_result("📖 用法: /rf_test <测试文本>")
+            return
+            
+        all_rules = self._get_all_rules()
+        if not all_rules:
+            yield event.plain_result("❌ 当前没有启用任何规则")
+            return
+            
+        # 处理用户输入的换行符
+        test_text = text.replace('\\n', '\n')
+        
+        result_text, applied = self._apply_rules_to_text(test_text)
+        
+        match_info = ', '.join(applied) if applied else '无匹配'
+        msg = f"📝 原文:\n{test_text}\n\n✨ 处理后:\n{result_text}\n\n📋 匹配规则: {match_info}"
+        
+        yield event.plain_result(msg)
