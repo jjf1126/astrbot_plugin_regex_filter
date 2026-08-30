@@ -2,7 +2,7 @@ from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api.provider import LLMResponse
 from astrbot.api import logger, AstrBotConfig
-import re
+import re15
 from typing import List, Dict, Any, Tuple
 from astrbot.api.message_components import Plain
 
@@ -68,7 +68,7 @@ class RegexFilterPlugin(Star):
     
     def _load_custom_rules(self, config: Dict[str, Any]):
         self.compiled_custom_rules = []
-        for i in range(1, 16):
+        for i in range(1, 21):
             prefix = f"custom_rule_{i}"
             if not config.get(f"{prefix}_enabled", False):
                 continue
