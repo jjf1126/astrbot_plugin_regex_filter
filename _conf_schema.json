@@ -442,5 +442,130 @@
     "description": "【自定义规则15】正则标志",
     "type": "string",
     "default": ""
+  },
+  "custom_rule_16_enabled": {
+    "description": "【自定义规则16】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_16_name": {
+    "description": "【自定义规则16】规则名称",
+    "type": "string",
+    "default": "自定义规则16"
+  },
+  "custom_rule_16_pattern": {
+    "description": "【自定义规则16】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_16_replacement": {
+    "description": "【自定义规则16】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_16_flags": {
+    "description": "【自定义规则16】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_17_enabled": {
+    "description": "【自定义规则17】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_17_name": {
+    "description": "【自定义规则17】规则名称",
+    "type": "string",
+    "default": "自定义规则17"
+  },
+  "custom_rule_17_pattern": {
+    "description": "【自定义规则17】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_17_replacement": {
+    "description": "【自定义规则17】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_17_flags": {
+    "description": "【自定义规则17】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_18_enabled": {
+    "description": "【自定义规则18】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_18_name": {
+    "description": "【自定义规则18】规则名称",
+    "type": "string",
+    "default": "自定义规则18"
+  },
+  "custom_rule_18_pattern": {
+    "description": "【自定义规则18】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_18_replacement": {
+    "description": "【自定义规则18】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_18_flags": {
+    "description": "【自定义规则18】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_19_enabled": {
+    "description": "【自定义规则19】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_19_name": {
+    "description": "【自定义规则19】规则名称",
+    "type": "string",
+    "default": "自定义规则19"
+  },
+  "custom_rule_19_pattern": {
+    "description": "【自定义规则19】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_19_replacement": {
+    "description": "【自定义规则19】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_19_flags": {
+    "description": "【自定义规则19】正则标志",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_20_enabled": {
+    "description": "【自定义规则20】启用",
+    "type": "bool",
+    "default": false
+  },
+  "custom_rule_20_name": {
+    "description": "【自定义规则20】规则名称",
+    "type": "string",
+    "default": "自定义规则20"
+  },
+  "custom_rule_20_pattern": {
+    "description": "【自定义规则20】正则表达式",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_20_replacement": {
+    "description": "【自定义规则20】替换内容",
+    "type": "string",
+    "default": ""
+  },
+  "custom_rule_20_flags": {
+    "description": "【自定义规则20】正则标志",
+    "type": "string",
+    "default": ""
   }
 }
